@@ -123,10 +123,8 @@ LOS/dsu/: dsu_init, build_dsu.sh, cycle.sh. `adb shell gsi_tool enable -s && adb
 
 ## 2026-10-14 late: standalone boot from boot_a
 - boot_a flashed with images/boot_b.linux14ud.img (backup: backup_fw/boot_a_20261014.img, sha256 54ced3de...0f16). Power on -> Debian (~10 s to ping), root on userdata. Rescue: Vol-Down+Power -> fastboot -> `fastboot flash boot_a backup_fw/boot_a_20261014.img` (Android is gone though) or `fastboot boot` any image.
-- A/B retry counter decremented per boot (7->5). Fixed once with tools/mark_boot_successful.py on /dev/sdd (boot_a attr 102f..->106f.., fastboot: slot-successful:_a yes). Redo if it ever shows no (e.g. after reflashing boot_a: `fastboot flash` keeps the GPT attrs).
+- A/B retry counter decremented per boot (7->5). Fixed once with tools/mark_boot_successful.py on /dev/sdd (boot_a attr 102f..->106f.., fastboot: slot-successful:_a yes). Redo if it ever shows no (e.g. after reflashing boot_a: NOTE: `fastboot flash boot_a` RESETS the attrs (successful=no, retry=7), so rerun the tool after every flash).
 - Breathing LED: /sys/class/leds/charging (trigger none, brightness 255, breath 1) for 60 s after boot, ibiza-breath.service.
 
-## 2026-10-14: credentials audit
-- Found: stage-1 busybox httpd :8081 (CGI = unauthenticated command exec) listening on all interfaces incl. WiFi; telnetd :23 and httpd :8080 on USB (no auth); sshd root password login with the public default `ibiza`.
-- Fixed on the phone: ibiza-lockdown.service kills those at boot, sshd PermitRootLogin prohibit-password, root password locked (login: woo (sudo) or root via key; Cockpit already refuses root). Listeners now: 22, 9090 only. The flashed boot_a image still starts them in stage 1 (killed ~after multi-user); fix init to drop them in the next boot image.
-- Repo/history contain no WiFi password (checked git history for the PSK).
+## 2026-10-14 late: boot image linux15sec (current boot_a)
+- images/boot_b.linux15sec.img (sha256 c705bd86...bb8e): stage-1 debug services (CGI httpd, telnetd, ttyGS0 root shell) now only start when there is no ibiza.root or the rootfs mount fails (`debug_services`); ibiza-init no longer starts the :8081 rescue httpd. Flashed to boot_a, then re-ran tools/mark_boot_successful.py (flash had reset slot-successful). Verified: listeners 22 + 9090 only, ttyGS0 has only agetty.

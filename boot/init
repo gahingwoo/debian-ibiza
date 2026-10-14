@@ -60,6 +60,7 @@ option subnet 255.255.255.0
 option lease 3600
 CONF
 udhcpd -f /tmp/udhcpd.conf >/tmp/udhcpd.log 2>&1 &
+debug_services(){
 mkdir -p /www/cgi-bin
 cat > /www/cgi-bin/run <<'CGI'
 #!/bin/sh
@@ -76,6 +77,8 @@ telnetd -l /bin/sh -b 10.55.0.2:23 >/tmp/telnetd.log 2>&1 &
 NPID=$!
 ( while true; do [ -c /dev/ttyGS0 ] && setsid sh -c 'exec sh </dev/ttyGS0 >/dev/ttyGS0 2>&1'; sleep 1; done ) &
 SPID=$!
+}
+[ -z "$IROOT" ] && debug_services
 sleep 1
 LOG "S6 services: telnetd=[$(pidof telnetd)] ttyGS=[$(ls /dev/ttyGS* 2>&1 | tr "\n" " ")] ptmx=[$(ls -l /dev/ptmx 2>&1)] listen=[$(netstat -ln 2>&1 | grep ":23 ")]"
 for m in $(cat /lib/modules/modules.load 2>/dev/null); do
@@ -132,21 +135,10 @@ if [ -n "$IROOT" ]; then
       mkdir -p /mnt/root/dev/pts /mnt/root/dev/shm
       ln -sf /proc/self/fd /mnt/root/dev/fd; ln -sf /proc/self/fd/0 /mnt/root/dev/stdin; ln -sf /proc/self/fd/1 /mnt/root/dev/stdout; ln -sf /proc/self/fd/2 /mnt/root/dev/stderr
       chmod 666 /mnt/root/dev/null /mnt/root/dev/zero /mnt/root/dev/full /mnt/root/dev/random /mnt/root/dev/urandom /mnt/root/dev/tty /mnt/root/dev/ptmx 2>/dev/null
-      mkdir -p /mnt/root/usr/local/sbin /mnt/root/usr/local/share/rescue/cgi-bin
+      mkdir -p /mnt/root/usr/local/sbin
       cp /bin/busybox /mnt/root/usr/local/sbin/busybox
-      cat > /mnt/root/usr/local/share/rescue/cgi-bin/run <<'RCGI'
-#!/usr/local/sbin/busybox sh
-PATH=/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
-echo "Content-Type: text/plain"
-echo ""
-n=${CONTENT_LENGTH:-0}
-cmd=$(/usr/local/sbin/busybox head -c $n)
-/usr/local/sbin/busybox sh -c "$cmd" 2>&1
-RCGI
-      chmod 755 /mnt/root/usr/local/share/rescue/cgi-bin/run
       cat > /mnt/root/usr/local/sbin/ibiza-init <<'RINIT'
 #!/usr/local/sbin/busybox sh
-/usr/local/sbin/busybox httpd -p 8081 -h /usr/local/share/rescue >/dev/null 2>&1 &
 ( /usr/local/sbin/busybox sleep 180
   if [ ! -d /run/systemd/system ] && [ ! -e /run/rescue-stay ]; then
     echo "linuxb: WATCHDOG systemd not up after 180s, warm reboot" > /dev/kmsg
@@ -160,6 +152,7 @@ RINIT
     fi
   else
     LOG "S11 rootfs mount FAILED, staying in stage1"
+    debug_services
   fi
 fi
 t=0
