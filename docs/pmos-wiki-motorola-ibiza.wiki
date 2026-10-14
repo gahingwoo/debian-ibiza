@@ -19,6 +19,7 @@
 | memory = 8 GB (tested unit; other variants exist)
 | architecture = aarch64
 | type = Handset
+| status_usbnet = Y
 }}
 
 The Motorola Moto G50 was released in 2021. It has no device package yet. A console-only Nura edge root filesystem (OpenRC) boots on the vendor 5.4 kernel and answers over ssh, and Debian 13 runs fully on the same kernel with WiFi and Bluetooth. The notes below are meant as groundwork for a proper port.
@@ -71,7 +72,7 @@ The phone launched with Android 11. The last Motorola release is Android 12. Lin
 |}
 
 === What works ===
-All of this runs on the vendor 5.4 kernel. The infobox status fields are left empty because most of it was tested on Debian, not Nura.
+All of this runs on the vendor 5.4 kernel. The infobox status fields describe Nura only: USB networking is filled in because it was verified there, and everything else is left blank (untested), even where Debian works.
 {| class="wikitable"
 ! Feature !! Debian 13 (systemd) !! Nura edge (OpenRC)
 |-
