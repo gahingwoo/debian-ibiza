@@ -10,6 +10,7 @@
 | category = downstream
 | originalsoftware = Android
 | originalversion = 11
+| extendedversion = 12
 | pmoskernel = Downstream: 5.4.302
 | chipset = Qualcomm Snapdragon 480 5G (SM4350)
 | cpu = 2x up to 2.04 GHz, 6x up to 1.8 GHz (as reported by cpufreq)
