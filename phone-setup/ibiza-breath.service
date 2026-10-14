@@ -1,0 +1,10 @@
+[Unit]
+Description=Breathing LED for one minute after boot
+After=ibiza-misc.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/ibiza-breath.sh
+
+[Install]
+WantedBy=multi-user.target

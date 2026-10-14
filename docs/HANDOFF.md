@@ -120,3 +120,8 @@ LOS/dsu/: dsu_init, build_dsu.sh, cycle.sh. `adb shell gsi_tool enable -s && adb
 - Fix: `fastboot flash partition gpt.bin` from Original/XT2137-1_*/ (md5 5217aadb...; its LUN5 table is identical to the phone's, 25 entries). ABL recovered. NEVER change the entry count / table size of sde; never edit GPT with sgdisk again.
 - Android is gone by decision: userdata (sde25, PARTNAME=userdata) is now ext4 label debian-root holding the Debian rootfs (103 GB). Stage-1 (linuxb/init, image images/boot_b.linux14ud.img) mounts PARTNAME=userdata if it contains /lib/systemd/systemd, else falls back to the old 8 GiB loop in super. super (system_a/vendor_a for the WiFi chroot) is untouched.
 - DSU path (dsu/) needs Android and is now moot. Still booted via `fastboot boot`; flashing boot_a for standalone boot is NOT done yet (ask the user first).
+
+## 2026-10-14 late: standalone boot from boot_a
+- boot_a flashed with images/boot_b.linux14ud.img (backup: backup_fw/boot_a_20261014.img, sha256 54ced3de...0f16). Power on -> Debian (~10 s to ping), root on userdata. Rescue: Vol-Down+Power -> fastboot -> `fastboot flash boot_a backup_fw/boot_a_20261014.img` (Android is gone though) or `fastboot boot` any image.
+- A/B retry counter decremented per boot (7->5). Fixed once with tools/mark_boot_successful.py on /dev/sdd (boot_a attr 102f..->106f.., fastboot: slot-successful:_a yes). Redo if it ever shows no (e.g. after reflashing boot_a: `fastboot flash` keeps the GPT attrs).
+- Breathing LED: /sys/class/leds/charging (trigger none, brightness 255, breath 1) for 60 s after boot, ibiza-breath.service.
