@@ -1,0 +1,10 @@
+[Unit]
+Description=Kill stage-1 rescue services (telnetd, CGI httpd) after boot
+After=ibiza-misc.service ssh.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ibiza-lockdown.sh
+
+[Install]
+WantedBy=multi-user.target

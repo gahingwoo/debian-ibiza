@@ -78,8 +78,7 @@ Nothing proprietary is committed. From **your own** phone you need: the LineageO
   on copies (`wifi/efs_copy.sh`). The packaged `rmtfs.service` uses `-P` (real partitions) — mask it.
 * The rootfs lives past the end of what the LP metadata registers for `system_b`. Do not run LP operations / OTA updates that
   could allocate in `super`'s free area.
-* `rootfs/configure_rootfs.sh` sets the root password from `$ROOT_PW` (default `ibiza`) and allows root login over ssh:
-  **change it** before connecting the phone to anything but a private USB link.
+* `rootfs/configure_rootfs.sh` locks the root password unless you pass `ROOT_PW`; add your ssh key to `/root/.ssh/authorized_keys` and a normal sudo user for Cockpit. `phone-setup/ibiza-lockdown.sh` (+ `.service`) kills the stage-1 rescue servers (unauthenticated telnetd/CGI httpd) after boot, and `10-ibiza-hardening.conf` sets `PermitRootLogin prohibit-password`.
 * This is research code for one device. Flashing or booting images can brick hardware; read the scripts first.
 
 ## Licence

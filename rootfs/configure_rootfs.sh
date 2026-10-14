@@ -25,7 +25,7 @@ N
 install -m600 "$KEY" $R/root/.ssh/authorized_keys
 chmod 700 $R/root/.ssh
 printf 'PermitRootLogin yes\n' > $R/etc/ssh/sshd_config.d/10-ibiza.conf
-chroot $R /bin/bash -c 'locale-gen && echo "root:${ROOT_PW:-ibiza}" | chpasswd && systemctl enable systemd-networkd ssh serial-getty@ttyGS0.service && systemctl disable systemd-resolved 2>/dev/null; true'
+chroot $R /bin/bash -c 'locale-gen && if [ -n "${ROOT_PW:-}" ]; then echo "root:${ROOT_PW}" | chpasswd; else passwd -l root; fi && systemctl enable systemd-networkd ssh serial-getty@ttyGS0.service && systemctl disable systemd-resolved 2>/dev/null; true'
 rm -f $R/etc/resolv.conf; printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > $R/etc/resolv.conf
 rm -f $R/etc/ssh/ssh_host_*; chroot $R ssh-keygen -A
 chroot $R apt-get clean
