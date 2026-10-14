@@ -4,8 +4,8 @@
 | codename = motorola-ibiza
 | model = XT2137-1, XT2137-2
 | releaseyear = 2021
-| booting = no
-| status = Debian 13 and a Nura edge (OpenRC) userspace boot on the vendor 5.4 kernel; there is no device package or proper image yet
+| booting = yes
+| status = A console-only Nura edge root (OpenRC) boots with the vendor 5.4 kernel through fastboot boot and ssh works over USB; no device package, no screen output
 | packaged = no
 | category = downstream
 | originalsoftware = Android
