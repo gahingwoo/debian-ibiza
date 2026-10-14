@@ -1,35 +1,60 @@
 {{Infobox device
-| name = Motorola Moto G50
-| codename = motorola-ibiza
 | manufacturer = Motorola
-| soc = Qualcomm Snapdragon 480 5G (SM4350 "holi")
-| status = Research notes only, no pmaports package yet
+| name = Moto G50
+| codename = motorola-ibiza
+| model = XT2137-1, XT2137-2
+| releaseyear = 2021
+| booting = no
+| status = Debian 13 boots on the vendor 5.4 kernel; there is no postmarketOS image yet
+| packaged = no
+| category = downstream
+| originalsoftware = Android
+| originalversion = 11
+| chipset = Qualcomm Snapdragon 480 5G (SM4350)
+| cpu = 2x up to 2.04 GHz, 6x up to 1.8 GHz (as reported by cpufreq)
+| display = 720x1600 IPS LCD, 90 Hz
+| storage = 64/128 GB
+| memory = 8 GB (tested unit; other variants exist)
+| architecture = aarch64
+| type = Handset
 }}
-<!-- DRAFT, not published. Everything below was measured on one XT2137-2 running Debian 13 (see https://github.com/gahingwoo/debian-ibiza).
-     Items marked TODO were not tested. -->
 
-== Status ==
-There is no postmarketOS port of this phone yet. I checked pmaports (<code>main</code> branch) on 2026-10-14. There is no <code>device-motorola-ibiza</code> in <code>main</code>, <code>community</code>, <code>testing</code> or <code>archived</code>, and no merge request or issue mentions ibiza, SM4350 or the Moto G50.
+The Motorola Moto G50 was released in 2021.
 
-The only Motorola device in <code>testing</code> is the Edge 30 (<code>motorola-dubai</code>, SM7325). It uses a mainline kernel, flashes with fastboot and builds a boot image with header version 2. The other Motorola packages are in <code>archived</code>, and several of them are named <code>-downstream</code>.
+There is no port yet. The results below were measured with Debian 13 (arm64, systemd) on the stock bootloader and the vendor 5.4 kernel, and are meant as groundwork for a postmarketOS port. The author of this page owns the tested unit (an XT2137-2). Its screen is broken, so display and touch were never tested. All the work was done over USB and WiFi.
 
-A merge request for the Moto G82 5G (<code>motorola-rhodep</code>, SM6375) was opened in August 2026 and closed on 2026-09-30. It booted mainline 7.2-rc5 with WCN3990 WiFi and Bluetooth working. The reason it was closed is not visible without logging in.
+== Contributors ==
+* [[User:Gahingwoo]]
 
-The notes below come from running Debian 13 (arm64, systemd) on the stock bootloader with the vendor 5.4 kernel. They are intended as groundwork for a pmaports device package.
+== Users owning this device ==
+{{Device owners}}
 
-== Hardware ==
+== How to enter flash mode ==
+Turn the phone off, then hold {{Button|Volume Down}} and {{Button|Power}} at the same time to enter fastboot.
+
+It is also possible to enter fastboot using <code>adb</code>:
+<syntaxhighlight lang="shell-session">
+$ adb reboot bootloader
+</syntaxhighlight>
+
+== How to unlock the bootloader ==
+Enter flash mode (see [[#How to enter flash mode]]) and follow the instructions on [https://en-us.support.motorola.com/app/standalone/bootloader/unlock-your-device-a Motorola Support]. The tested unit was already unlocked, so this procedure was not tried on it.
+
+== Installation ==
+There is no postmarketOS image for this device yet. The Debian setup used for these notes is at [https://github.com/gahingwoo/debian-ibiza debian-ibiza]. To test an image without writing anything, use <code>fastboot boot boot.img</code>; a reboot then returns to the previous system. Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT first.
+
+== Notes ==
+=== Hardware ===
 {| class="wikitable"
 ! Item !! Value
 |-
-| Codename || ibiza (fastboot <code>product: ibiza</code>); models XT2137-1 and XT2137-2
+| Codename || ibiza (fastboot <code>product: ibiza</code>)
 |-
 | SoC || Qualcomm SM4350 (Snapdragon 480 5G), 2 + 6 cores; cpufreq policy0 300-1805 MHz, policy6 768-2035 MHz
 |-
-| RAM || 8 GB on the tested unit (other variants exist, TODO: list them)
-|-
 | Storage || UFS, Samsung KM8V8001JM (128 GB), 4096-byte sectors, A/B slots, dynamic partitions (<code>super</code>)
 |-
-| Bootloader || Motorola ABL, <code>MBM-3.0-uefi-1f15ff22498-221026</code>; unlocked on the tested unit
+| Bootloader || Motorola ABL, <code>MBM-3.0-uefi-1f15ff22498-221026</code>, unlocked on the tested unit
 |-
 | Kernel source || [https://github.com/LineageOS/android_kernel_motorola_sm6375 LineageOS/android_kernel_motorola_sm6375] (GPL-2.0), Linux 5.4.302, Motorola config fragment <code>vendor/ext_config/moto-holi-ibiza.config</code>
 |-
@@ -38,26 +63,29 @@ The notes below come from running Debian 13 (arm64, systemd) on the stock bootlo
 | Hypervisor || The Qualcomm hypervisor owns EL2 (<code>All CPU(s) started at EL1</code>), so there is no KVM
 |}
 
-== What works (vendor 5.4 kernel, Debian userspace) ==
+=== What works on Debian (vendor 5.4 kernel) ===
+These results are for Debian, not postmarketOS, so the status fields in the infobox are left empty.
 {| class="wikitable"
 ! Feature !! State !! Notes
 |-
 | Booting || Works || <code>fastboot boot</code> of an Android boot image v3 (kernel plus its own initramfs) with the stock <code>vendor_boot</code>. Flashing it to <code>boot_a</code> also works
 |-
-| USB gadget || Works || configfs, NCM + ACM
+| USB networking || Works || configfs gadget, NCM + ACM
 |-
 | WiFi || Works || The firmware runs in a modem protection domain, so the modem has to boot. <code>qrtr</code>, <code>pd-mapper</code>, <code>tqftpserv</code> and <code>rmtfs</code> must be running before the modem starts, together with Android's <code>pm-service</code> and <code>cnss-daemon</code> (details below)
 |-
-| Bluetooth || Partly || Scanning works. Pairing and audio: TODO. The firmware is loaded from userspace (details below)
+| Bluetooth || Partly || Scanning works. Pairing and audio: untested. The firmware is loaded from userspace (details below)
 |-
 | Battery, charging, thermal sensors || Works || sysfs (<code>qcom_battery</code>, thermal zones)
 |-
 | cpufreq || Works || schedutil on both clusters
 |-
-| Display, touch, GPU, audio, camera, cellular modem || TODO || Not attempted
+| Display, touch || Untested || The screen of the tested unit is broken
+|-
+| GPU, audio, camera, cellular modem || Untested || Not attempted
 |}
 
-== Things a port has to know ==
+=== Things a port has to know ===
 * The kernel has no <code>CONFIG_DEVTMPFS</code>, no IPC/PID/USER namespaces, no debugfs and no FHANDLE/AUTOFS. systemd treats a <code>/dev</code> that is not a mount point as fatal, so the initramfs mounts a tmpfs on the new root's <code>/dev</code> and fills it from <code>/sys/class/*</code> before <code>switch_root</code>. Units that use namespaces need <code>PrivateIPC=no</code> and similar settings.
 * The bootloader needs a legacy LZ4 ramdisk. A gzip ramdisk stacked after LZ4 does not boot.
 * The WiFi firmware lives in the modem. The downstream kernel drops userspace QRTR registrations made after the modem link comes up, so the QRTR services have to be running first. Run <code>rmtfs</code> on copies of <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code> and <code>fsc</code>, never on the real partitions, because they hold the IMEI and RF calibration.
@@ -67,14 +95,11 @@ The notes below come from running Debian 13 (arm64, systemd) on the stock bootlo
 * '''Never resize or add entries to the GPT of the UFS LUN that holds <code>super</code> and <code>userdata</code> with sgdisk.''' Afterwards the bootloader reads nothing on that LUN: <code>cid</code> and <code>imei</code> come back empty and <code>fastboot boot</code> fails with "No Media". To recover, run <code>fastboot flash partition gpt.bin</code> with the file from the stock firmware package.
 * A/B slots: with no Android to call <code>markBootSuccessful</code>, the slot's retry counter drops on every boot. Either set the successful bit (bit 54 of the <code>boot_a</code> GPT attributes, rewriting both tables and their CRCs) or reset the counter with <code>fastboot set_active a</code>. <code>fastboot flash boot_a</code> resets the attributes.
 
-== Installation sketch ==
-# Unlock the bootloader. The tested unit was already unlocked, so the procedure is not covered here.
-# Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT.
-# Test with <code>fastboot boot boot.img</code>. Nothing is written, and a reboot returns to the previous system.
+=== Related work ===
+Checked on 2026-10-14: pmaports has no <code>device-motorola-ibiza</code>, and no merge request or issue mentions ibiza, SM4350 or the Moto G50. A merge request for the Moto G82 5G (<code>motorola-rhodep</code>, SM6375, mainline kernel) was closed on 2026-09-30.
 
 == Links ==
 * [https://github.com/gahingwoo/debian-ibiza debian-ibiza]: scripts and the full engineering log
 * [https://wiki.lineageos.org/devices/ibiza/ LineageOS wiki: ibiza]
 
-[[Category:Motorola]]
-[[Category:Qualcomm SM4350]]
+[[Category:Unsupported Devices]]
