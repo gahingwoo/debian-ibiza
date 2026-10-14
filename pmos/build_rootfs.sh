@@ -33,5 +33,12 @@ sudo mkdir -p /mnt/pmroot/etc/local.d
 printf '#!/bin/sh\nip link set usb0 up\nip addr add 192.168.2.200/24 dev usb0\nip route add default via 192.168.2.1 dev usb0 metric 700\n' | sudo tee /mnt/pmroot/etc/local.d/10-ibiza-usb0.start >/dev/null
 sudo chmod 755 /mnt/pmroot/etc/local.d/10-ibiza-usb0.start
 sudo rm -f /mnt/pmroot/etc/runlevels/boot/unudhcpd.usb0
+# Root login by key and passwordless sudo for wheel (the dummy password above is unknown, so without this nothing in the
+# image can be rebooted or administered by a normal user)
+sudo install -d -m 700 /mnt/pmroot/root/.ssh
+cat ~/pmos-keys/*.pub | sudo tee /mnt/pmroot/root/.ssh/authorized_keys >/dev/null
+sudo chmod 600 /mnt/pmroot/root/.ssh/authorized_keys
+printf '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL\n' | sudo tee /mnt/pmroot/etc/sudoers.d/10-wheel-nopasswd >/dev/null
+sudo chmod 440 /mnt/pmroot/etc/sudoers.d/10-wheel-nopasswd
 sudo umount /mnt/pmroot
 echo "done: $OUT"

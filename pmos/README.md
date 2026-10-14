@@ -12,7 +12,9 @@ Tested 2026-10-14 with `fastboot boot` (nothing is written to `boot_a`; a reboot
   Stage 1 then mounts the Debian partition, loop-mounts that file as the root and starts `/sbin/init`. If the file is missing
   or unusable it falls back to the normal Debian boot.
 * Result: Nura edge on Linux 5.4.302-moto, OpenRC as PID 1, `usb0` at 192.168.2.200, sshd running, 20 services started and
-  none crashed. Log in as `woo` with the ssh key you put in `~/pmos-keys/`.
+  none crashed. Log in as `woo` or `root` with the ssh key you put in `~/pmos-keys/`; `wheel` has passwordless sudo.
+  (The first test image had neither, so the running system could not be rebooted remotely; the root key and sudo rule are
+  added by `build_rootfs.sh` now, checked only by inspecting the image, not by booting it again.)
 
 The systemd variant does not work. Its PID 1 prints `Failed to determine whether /proc is a mount point` and freezes, because
 this kernel has no `CONFIG_FHANDLE` (no `name_to_handle_at`) and its `statx` has no mount id (added in Linux 5.8). Debian's
