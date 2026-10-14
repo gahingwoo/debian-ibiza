@@ -52,7 +52,7 @@ Before flashing anything, back up <code>boot_a</code>, <code>modem*</code>, <cod
 
 == Notes ==
 === Android versions ===
-The phone launched with Android 11. According to the owner, the last Motorola release is Android 12. LineageOS 24.0 (Android 17) runs on it; this was checked on the tested unit.
+The phone launched with Android 11. The last Motorola release is Android 12. LineageOS 24.0 (Android 17) runs on it; this was checked on the tested unit.
 
 === Hardware ===
 {| class="wikitable"
