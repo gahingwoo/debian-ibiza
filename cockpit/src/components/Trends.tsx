@@ -81,6 +81,8 @@ export function Trends({ phone, samples }: { phone: Phone; samples: Sample[] }) 
     const times = samples.map(s => s.t);
     const maxFreq = (i: number) => (phone.policies[i]?.max ?? 2000000) / 1000;
     const memTotal = Math.round(phone.memTotal / 1048576);
+    // Scale to what is actually used: against the full 7.4 GB the line would sit flat on the floor.
+    const memMax = Math.max(256, Math.ceil(Math.max(0, ...samples.map(s => s.mem)) * 1.4 / 128) * 128);
     return (
         <Card isFullHeight>
             <CardHeader><CardTitle><Title headingLevel="h2" size="lg">{_("Last hour")}</Title></CardTitle></CardHeader>
@@ -102,7 +104,7 @@ export function Trends({ phone, samples }: { phone: Phone; samples: Sample[] }) 
                                series={[{ label: _("into battery"), color: GREEN, values: samples.map(s => s.watts) }]} />
                     </GridItem>
                     <GridItem>
-                        <Chart title={_("Memory used")} unit="MB" times={times} min={0} max={memTotal}
+                        <Chart title={_("Memory used")} unit="MB" times={times} min={0} max={memMax}
                                series={[{ label: `/ ${memTotal} MB`, color: PURPLE, values: samples.map(s => s.mem) }]} />
                     </GridItem>
                 </Grid>
