@@ -108,7 +108,16 @@ if [ -n "$IROOT" ]; then
   done
   LOG "S8 super=[$SUP] $(ls -l $SUP 2>&1)"
   mount -t tmpfs tmpfs /mnt; mkdir -p /mnt/root
-  if [ -b "$SUP" ] && [ -b /dev/loop0 ] || mknod /dev/loop0 b 7 0 2>/dev/null; then
+  DEB=""
+  for u in /sys/class/block/*/uevent; do
+    if grep -q '^PARTNAME=userdata$' $u; then DEB=/dev/$(sed -n 's/^DEVNAME=//p' $u); fi
+  done
+  if [ -b "$DEB" ]; then
+    mount -t ext4 -o noatime $DEB /mnt/root; LOG "S9 userdata partition $DEB mount rc=$?"
+    [ -x /mnt/root/lib/systemd/systemd ] || { umount /mnt/root 2>/dev/null; LOG "S9 no debian on $DEB, falling back"; }
+  fi
+  if mountpoint -q /mnt/root; then :
+  elif [ -b "$SUP" ] && [ -b /dev/loop0 ] || mknod /dev/loop0 b 7 0 2>/dev/null; then
     losetup -o $SUPER_OFF /dev/loop0 $SUP; LOG "S9 losetup rc=$?"
     mount -t ext4 -o noatime /dev/loop0 /mnt/root; LOG "S10 mount rc=$? label=[$(blkid /dev/loop0 2>&1)]"
   fi

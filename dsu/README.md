@@ -14,3 +14,5 @@ Nothing on slot A or in boot_a is modified. Costs ~0.5 GiB userdata_gsi + 2 GiB 
 
 ## Android app
 `app/` is a 1-button app (Magisk `su` -> `gsi_tool enable -s && reboot`). Build: `app/build.sh`.
+
+Note: DSU needs a working Android. The current setup has root on the `userdata` partition (see docs/HANDOFF.md); never resize the sde GPT with sgdisk (ABL stops booting).
