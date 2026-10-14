@@ -105,3 +105,9 @@ Hashes: LOS/boot.img sha256 046d4fb3...a0f8a2, vendor_boot.img 031a3056...1d1, d
 
 ## Other open items from earlier
 SELinux permissive -> enforcing (needs original vendor_boot.img on slot A, rollback = vendor_boot.permissive.img); tablet mode persistence (wm size 1080x1920, wm density 240; provision script resets 720x1600@280 after a data wipe); after any data wipe re-set locksettings and screen_off_timeout.
+
+## DSU boot-from-Android (verified 2026-10-14)
+See `dsu/README.md`. `gsi_tool enable -s && reboot` boots Debian (ssh up ~20 s after reboot), Debian `reboot` returns to Android with
+DSU auto-disabled. Pitfalls found: DSU `/` is a read-only ext4 so busybox applets must be pre-linked in the image and writable dirs
+mounted as tmpfs; busybox `switch_root` fails on non-ramfs root -> use `pivot_root`; `gsi_tool install` needs root, use the
+dynsystem VerificationActivity intent from adb shell; logcat is flooded by the fingerprint HAL, read pstore instead.
