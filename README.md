@@ -20,6 +20,10 @@ Linux is started from RAM with `fastboot boot`, so a reboot always returns to An
 | Slot B boot | **no** | firmware on slot B is older, bootloader refuses `set_active b`; not needed |
 | Cellular modem / audio / GPU / camera | not attempted | the modem *is* booted (WiFi needs it) but cellular is unused |
 
+## The Cockpit "Phone" page
+
+![Cockpit Phone page: device, battery, CPU frequency, last-hour charts, temperatures](docs/images/cockpit-phone.png)
+
 ## How it works
 
 ```
