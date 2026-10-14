@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 import { useCallback, useEffect, useState } from "react";
+import cockpit from "cockpit";
 import { superuser } from "superuser.js";
 
 import { readPhone, type Phone } from "./phone.js";
@@ -36,4 +37,26 @@ export function usePhone() {
     }, [refresh]);
 
     return { phone, error, refresh };
+}
+
+export type Sample = { t: number; temp: number; little: number; big: number; watts: number; mem: number };
+const HISTORY = "/run/ibiza/history.tsv";
+
+/** The last hour of samples written by ibiza-history.service, updated as the file grows. */
+export function useHistory(): Sample[] {
+    const [samples, setSamples] = useState<Sample[]>([]);
+    useEffect(() => {
+        const file = cockpit.file(HISTORY);
+        file.watch((content: string | null) => {
+            const rows: Sample[] = [];
+            for (const line of (content ?? "").split("\n")) {
+                const f = line.split("\t");
+                if (f.length < 6) continue;
+                rows.push({ t: Number(f[0]), temp: Number(f[1]), little: Number(f[2]), big: Number(f[3]), watts: Number(f[4]), mem: Number(f[5]) });
+            }
+            setSamples(rows);
+        }, { read: true });
+        return () => file.close();
+    }, []);
+    return samples;
 }

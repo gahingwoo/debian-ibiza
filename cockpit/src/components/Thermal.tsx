@@ -17,7 +17,7 @@ export function Thermal({ phone }: { phone: Phone }) {
         <Card isFullHeight>
             <CardHeader><CardTitle><Title headingLevel="h2" size="lg">{_("Temperatures")}</Title></CardTitle></CardHeader>
             <CardBody>
-                <Grid hasGutter md={6} xl={4}>
+                <Grid hasGutter md={6} xl={3}>
                     {zones.map(z => (
                         <GridItem key={z.type}>
                             <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} flexWrap={{ default: "nowrap" }}>

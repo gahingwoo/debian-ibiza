@@ -1,8 +1,8 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * The Moto G50 running Debian, in Cockpit: device, battery, CPU, temperatures, and a reboot back to Android when
- * Android is on the phone. Everything is read from sysfs through one script; see phone.ts.
+ * The Moto G50 running Debian, in Cockpit: device, battery, CPU, temperatures and a last-hour history chart.
+ * Live values are read from sysfs through one script (phone.ts); the history comes from ibiza-history.service.
  */
 
 import React from "react";
@@ -14,16 +14,17 @@ import { Grid, GridItem } from "@patternfly/react-core/dist/esm/layouts/Grid/ind
 import { Stack, StackItem } from "@patternfly/react-core/dist/esm/layouts/Stack/index.js";
 
 import { _ } from "./phone.js";
-import { useAdmin, usePhone } from "./hooks.js";
+import { useAdmin, useHistory, usePhone } from "./hooks.js";
 import { Battery } from "./components/Battery.jsx";
 import { Cpu } from "./components/Cpu.jsx";
 import { Device } from "./components/Device.jsx";
-import { Power } from "./components/Power.jsx";
 import { Thermal } from "./components/Thermal.jsx";
+import { Trends } from "./components/Trends.jsx";
 
 export const Application = () => {
     const admin = useAdmin();
     const { phone, error, refresh } = usePhone();
+    const samples = useHistory();
 
     let body: React.ReactNode;
     if (!phone) {
@@ -42,9 +43,8 @@ export const Application = () => {
                         <GridItem md={6} xl={4}><Device phone={phone} /></GridItem>
                         <GridItem md={6} xl={4}><Battery phone={phone} /></GridItem>
                         <GridItem md={6} xl={4}><Cpu phone={phone} admin={admin} refresh={refresh} /></GridItem>
-                        <GridItem md={6} xl={8}><Thermal phone={phone} /></GridItem>
-                        {phone.android &&
-                            <GridItem md={6} xl={4}><Power admin={admin} /></GridItem>}
+                        <GridItem xl={12}><Trends phone={phone} samples={samples} /></GridItem>
+                        <GridItem xl={12}><Thermal phone={phone} /></GridItem>
                     </Grid>
                 </StackItem>
             </Stack>

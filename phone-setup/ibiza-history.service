@@ -1,0 +1,11 @@
+[Unit]
+Description=Sample phone sensors for the Cockpit charts
+After=ibiza-misc.service
+
+[Service]
+ExecStart=/usr/local/sbin/ibiza-history.sh
+Restart=on-failure
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
