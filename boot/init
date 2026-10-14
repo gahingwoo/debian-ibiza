@@ -88,7 +88,8 @@ done
 # ---- stage 2: Debian rootfs on system_b inside super (ibiza.root=chroot|systemd) ----
 SUPER_OFF=4136632320
 IROOT=""
-for w in $(cat /proc/cmdline); do case $w in ibiza.root=*) IROOT=${w#ibiza.root=};; esac; done
+RFILE=""
+for w in $(cat /proc/cmdline); do case $w in ibiza.root=*) IROOT=${w#ibiza.root=};; ibiza.rootfile=*) RFILE=${w#ibiza.rootfile=};; esac; done
 mkdevs(){
   DD=${1:-/dev}
   for f in /sys/class/*/*/dev /sys/block/*/dev; do
@@ -114,7 +115,16 @@ if [ -n "$IROOT" ]; then
   for u in /sys/class/block/*/uevent; do
     if grep -q '^PARTNAME=userdata$' $u; then DEB=/dev/$(sed -n 's/^DEVNAME=//p' $u); fi
   done
-  if [ -b "$DEB" ]; then
+  if [ -b "$DEB" ] && [ -n "$RFILE" ]; then
+    # Optional: boot a root image file stored on the userdata partition (for trying another distro without touching Debian)
+    mkdir -p /mnt/ud; mount -t ext4 -o noatime $DEB /mnt/ud
+    [ -b /dev/loop1 ] || mknod /dev/loop1 b 7 1
+    losetup /dev/loop1 /mnt/ud$RFILE && mount -t ext4 -o noatime /dev/loop1 /mnt/root
+    LOG "S9 rootfile $RFILE rc=$?"
+    mkdir -p /mnt/root/mnt/ud; mount --bind /mnt/ud /mnt/root/mnt/ud
+    [ -x /mnt/root/lib/systemd/systemd ] || [ -x /mnt/root/sbin/init ] || { umount /mnt/root 2>/dev/null; losetup -d /dev/loop1 2>/dev/null; LOG "S9 rootfile unusable, using the partition"; }
+  fi
+  if [ -b "$DEB" ] && ! mountpoint -q /mnt/root; then
     mount -t ext4 -o noatime $DEB /mnt/root; LOG "S9 userdata partition $DEB mount rc=$?"
     [ -x /mnt/root/lib/systemd/systemd ] || { umount /mnt/root 2>/dev/null; LOG "S9 no debian on $DEB, falling back"; }
   fi
@@ -139,12 +149,14 @@ if [ -n "$IROOT" ]; then
       cp /bin/busybox /mnt/root/usr/local/sbin/busybox
       cat > /mnt/root/usr/local/sbin/ibiza-init <<'RINIT'
 #!/usr/local/sbin/busybox sh
+[ -d /mnt/ud/pmos ] && ( /usr/local/sbin/busybox sleep 40; /usr/local/sbin/busybox dmesg > /mnt/ud/pmos/dmesg_40s.txt 2>&1; /usr/local/sbin/busybox sleep 60; /usr/local/sbin/busybox dmesg > /mnt/ud/pmos/dmesg_100s.txt 2>&1; /usr/local/sbin/busybox sync ) &
 ( /usr/local/sbin/busybox sleep 180
-  if [ ! -d /run/systemd/system ] && [ ! -e /run/rescue-stay ]; then
+  if [ ! -d /run/systemd/system ] && [ ! -d /run/openrc ] && [ ! -e /run/rescue-stay ]; then
     echo "linuxb: WATCHDOG systemd not up after 180s, warm reboot" > /dev/kmsg
     /usr/local/sbin/busybox sync; echo s > /proc/sysrq-trigger; echo b > /proc/sysrq-trigger
   fi ) &
-exec /lib/systemd/systemd
+[ -x /lib/systemd/systemd ] && exec /lib/systemd/systemd
+exec /sbin/init
 RINIT
       chmod 755 /mnt/root/usr/local/sbin/ibiza-init
       LOG "S12 switch_root"

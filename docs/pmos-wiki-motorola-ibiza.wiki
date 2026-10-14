@@ -5,7 +5,7 @@
 | model = XT2137-1, XT2137-2
 | releaseyear = 2021
 | booting = no
-| status = Debian 13 boots on the vendor 5.4 kernel; there is no postmarketOS image yet
+| status = Debian 13 and a Nura edge (OpenRC) userspace boot on the vendor 5.4 kernel; there is no device package or proper image yet
 | packaged = no
 | category = downstream
 | originalsoftware = Android
@@ -21,7 +21,7 @@
 
 The Motorola Moto G50 was released in 2021.
 
-There is no port yet. The results below were measured with Debian 13 (arm64, systemd) on the stock bootloader and the vendor 5.4 kernel, and are meant as groundwork for a postmarketOS port. The author of this page owns the tested unit (an XT2137-2). Its screen is broken, so display and touch were never tested. All the work was done over USB and WiFi.
+There is no port yet. The results below were measured with Debian 13 (arm64, systemd) and, for the boot test, a console-only Nura edge root filesystem (OpenRC), both on the stock bootloader and the vendor 5.4 kernel. They are meant as groundwork for a port. The author of this page owns the tested unit (an XT2137-2). Its screen is broken, so display and touch were never tested. All the work was done over USB and WiFi.
 
 == Contributors ==
 * [[User:Gahingwoo]]
@@ -41,7 +41,7 @@ $ adb reboot bootloader
 Enter flash mode (see [[#How to enter flash mode]]) and follow the instructions on [https://en-us.support.motorola.com/app/standalone/bootloader/unlock-your-device-a Motorola Support]. The tested unit was already unlocked, so this procedure was not tried on it.
 
 == Installation ==
-There is no postmarketOS image for this device yet. The Debian setup used for these notes is at [https://github.com/gahingwoo/linux-ibiza linux-ibiza]. To test an image without writing anything, use <code>fastboot boot boot.img</code>; a reboot then returns to the previous system. Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT first.
+There is no postmarketOS image for this device yet. The Debian setup used for these notes is at [https://github.com/gahingwoo/linux-ibiza linux-ibiza], including how the Nura edge root was built and booted. To test an image without writing anything, use <code>fastboot boot boot.img</code>; a reboot then returns to the previous system. Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT first.
 
 == Notes ==
 === Hardware ===
@@ -63,8 +63,11 @@ There is no postmarketOS image for this device yet. The Debian setup used for th
 | Hypervisor || The Qualcomm hypervisor owns EL2 (<code>All CPU(s) started at EL1</code>), so there is no KVM
 |}
 
+=== Android versions ===
+The phone launched with Android 11. According to the owner, the last Motorola release is Android 12. LineageOS 24.0 (Android 17) runs on it; this was checked on the tested unit before it was converted to Linux.
+
 === What works on Debian (vendor 5.4 kernel) ===
-These results are for Debian, not postmarketOS, so the status fields in the infobox are left empty.
+These results are for Debian, not a complete Nura port, so the status fields in the infobox are left empty. A console-only Nura edge root (OpenRC) also boots with the same kernel and initramfs, with USB networking and ssh working. Its systemd variant freezes in PID 1 on this kernel (see below).
 {| class="wikitable"
 ! Feature !! State !! Notes
 |-
@@ -92,6 +95,7 @@ These results are for Debian, not postmarketOS, so the status fields in the info
 * <code>cnss-daemon</code> and <code>pm-service</code> are bionic binaries. They run from the read-only <code>system</code> and <code>vendor</code> partitions in a chroot, with a small <code>LD_PRELOAD</code> that fakes the property service and the SELinux calls. The board data file <code>bdwlan_ibiza_ipa.bin</code> must be visible at <code>/vendor/firmware_mnt/image</code>.
 * <code>wlan.ko</code> is built with <code>PANIC_ON_BUG</code>. Never <code>rmmod wlan</code> after a failed load.
 * Bluetooth has four separate problems. The host UART runtime-suspends when idle, and closing the tty drops RTS. The kernel's <code>hci_qca</code> sends a 243-byte first TLV segment that kills the chip's parser, while a 16-byte first segment works. Keep the tty open from a resident process and <code>btattach</code> to a pty.
+* Newer systemd versions freeze in PID 1 here with "Failed to determine whether /proc is a mount point": the kernel has no <code>CONFIG_FHANDLE</code> and its <code>statx</code> has no mount id (added in Linux 5.8). Nura edge with OpenRC boots fine; Debian's systemd 257 also boots.
 * '''Never resize or add entries to the GPT of the UFS LUN that holds <code>super</code> and <code>userdata</code> with sgdisk.''' Afterwards the bootloader reads nothing on that LUN: <code>cid</code> and <code>imei</code> come back empty and <code>fastboot boot</code> fails with "No Media". To recover, run <code>fastboot flash partition gpt.bin</code> with the file from the stock firmware package.
 * A/B slots: with no Android to call <code>markBootSuccessful</code>, the slot's retry counter drops on every boot. Either set the successful bit (bit 54 of the <code>boot_a</code> GPT attributes, rewriting both tables and their CRCs) or reset the counter with <code>fastboot set_active a</code>. <code>fastboot flash boot_a</code> resets the attributes.
 
