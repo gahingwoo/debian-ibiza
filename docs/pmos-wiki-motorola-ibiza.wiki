@@ -41,7 +41,7 @@ $ adb reboot bootloader
 Enter flash mode (see [[#How to enter flash mode]]) and follow the instructions on [https://en-us.support.motorola.com/app/standalone/bootloader/unlock-your-device-a Motorola Support]. The tested unit was already unlocked, so this procedure was not tried on it.
 
 == Installation ==
-There is no postmarketOS image for this device yet. The Debian setup used for these notes is at [https://github.com/gahingwoo/debian-ibiza debian-ibiza]. To test an image without writing anything, use <code>fastboot boot boot.img</code>; a reboot then returns to the previous system. Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT first.
+There is no postmarketOS image for this device yet. The Debian setup used for these notes is at [https://github.com/gahingwoo/linux-ibiza linux-ibiza]. To test an image without writing anything, use <code>fastboot boot boot.img</code>; a reboot then returns to the previous system. Back up <code>boot_a</code>, <code>modem*</code>, <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>, <code>fsc</code>, <code>persist</code> and the GPT first.
 
 == Notes ==
 === Hardware ===
@@ -99,7 +99,7 @@ These results are for Debian, not postmarketOS, so the status fields in the info
 Checked on 2026-10-14: pmaports has no <code>device-motorola-ibiza</code>, and no merge request or issue mentions ibiza, SM4350 or the Moto G50. A merge request for the Moto G82 5G (<code>motorola-rhodep</code>, SM6375, mainline kernel) was closed on 2026-09-30.
 
 == Links ==
-* [https://github.com/gahingwoo/debian-ibiza debian-ibiza]: scripts and the full engineering log
+* [https://github.com/gahingwoo/linux-ibiza linux-ibiza]: scripts and the full engineering log
 * [https://wiki.lineageos.org/devices/ibiza/ LineageOS wiki: ibiza]
 
 [[Category:Unsupported Devices]]

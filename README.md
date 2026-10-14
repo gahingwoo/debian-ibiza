@@ -1,4 +1,4 @@
-# debian-ibiza — Debian 13 on a Moto G50 (XT2137-2, SM4350 "holi", codename *ibiza*)
+# linux-ibiza: Debian 13 on a Moto G50 (XT2137-2, SM4350 "holi", codename *ibiza*)
 
 Debian 13 (trixie, arm64) running on a **Motorola Moto G50** with the **stock bootloader, a locked-down hypervisor and the
 vendor 5.4 kernel** — no mainline kernel, no new bootloader. Android (LineageOS) stays on slot A and is never modified:
