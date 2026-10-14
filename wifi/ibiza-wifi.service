@@ -1,0 +1,14 @@
+[Unit]
+Description=Bring up the modem, Android helper daemons and the WLAN driver (WiFi)
+After=qrtr-ns.service tqftpserv.service pd-mapper.service NetworkManager.service ibiza-usb0-up.service
+Wants=qrtr-ns.service tqftpserv.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=240
+ExecStart=/root/wifi_stack.sh all
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

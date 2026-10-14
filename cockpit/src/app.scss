@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+@use "page.scss";
+
+// The page fills the iframe, so its sheet reaches the bottom of the window.
+html,
+body,
+#app {
+  block-size: 100%;
+}
+
+// A Cockpit page has no PatternFly sidebar column; keep the gap beside Cockpit's own sidebar only where it exists.
+.ct-page-fill.pf-v6-c-page {
+  @media screen and (width >= 75rem) {
+    grid-template-areas:
+      "header"
+      "main";
+    grid-template-columns: 1fr;
+  }
+
+  @media screen and (width >= 48rem) {
+    --pf-v6-c-page__main-container--MarginInlineStart: var(--pf-v6-c-page--inset);
+  }
+}
+
+// The second line under a value: smaller and quieter.
+.phone-detail {
+  color: var(--pf-t--global--text--color--subtle);
+  font-size: var(--pf-t--global--font--size--body--sm);
+}

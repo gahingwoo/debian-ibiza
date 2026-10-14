@@ -1,0 +1,32 @@
+# Nothing proprietary or personal belongs in this repo. Blobs come from your own device.
+*.img
+*.bin
+*.mbn
+*.mdt
+*.tlv
+*.zip
+*.tar.gz
+*.apk
+*.deb
+*.so
+*.ko
+*.p7s
+*.db
+# firmware / backups / keys
+backup_fw/
+backup_meta/
+adbkeys/
+**/adbkey*
+**/*.pem
+**/id_*
+efs/
+pstore_*/
+vendor_blobs/
+Original/
+# build output
+node_modules/
+dist/
+pkg/
+metafile.json
+runtime-npm-modules.txt
+.DS_Store

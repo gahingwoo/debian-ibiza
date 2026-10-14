@@ -1,0 +1,162 @@
+#!/bin/busybox sh
+export PATH=/bin:/sbin
+/bin/busybox --install -s /bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+rm -f /dev/kmsg; mknod -m 600 /dev/kmsg c 1 11
+echo 8 > /proc/sys/kernel/printk
+echo "linuxb: S0 init running" > /dev/kmsg
+( n=0
+  while [ $n -lt 60 ]; do
+    sleep 10
+    if [ -e /tmp/stay ]; then n=0; else n=$((n+1)); fi
+  done
+  echo "linuxb: SAFE warm reboot" > /dev/kmsg
+  sync
+  reboot -f
+  sleep 3
+  echo b > /proc/sysrq-trigger
+) &
+TPID=$!
+mkdir -p /dev/pts /tmp /run
+mount -t devpts devpts /dev/pts
+[ -c /dev/ptmx ] || mknod -m 666 /dev/ptmx c 5 2
+[ -c /dev/ttyGS0 ] || mknod -m 666 /dev/ttyGS0 c 509 0
+mount -t tmpfs tmpfs /tmp
+mount -t configfs none /sys/kernel/config
+LOG(){ echo "linuxb: $*" > /dev/kmsg; [ -c /dev/pmsg0 ] && echo "linuxb: $*" > /dev/pmsg0; }
+LOG "S1 mounts done; udc=[$(ls /sys/class/udc 2>/dev/null)] modules.load=$(wc -l < /lib/modules/modules.load 2>/dev/null)"
+
+G=/sys/kernel/config/usb_gadget/g1
+mkdir -p $G
+echo 0x1d6b > $G/idVendor
+echo 0x0104 > $G/idProduct
+mkdir -p $G/strings/0x409
+echo ibiza > $G/strings/0x409/manufacturer
+echo linuxb > $G/strings/0x409/product
+echo ibiza0001 > $G/strings/0x409/serialnumber
+mkdir -p $G/configs/c.1
+mkdir -p $G/functions/ncm.usb0 $G/functions/acm.GS0
+ln -s $G/functions/ncm.usb0 $G/configs/c.1/f1
+ln -s $G/functions/acm.GS0 $G/configs/c.1/f2
+LOG "S2 gadget configfs built"
+i=0
+while [ $i -lt 20 ] && [ -z "$(ls /sys/class/udc 2>/dev/null)" ]; do sleep 1; i=$((i+1)); done
+LOG "S3 udc=[$(ls /sys/class/udc 2>/dev/null)]"
+ls /sys/class/udc | head -n 1 > $G/UDC 2>/tmp/udc.err
+LOG "S4 bind rc=$? err=[$(cat /tmp/udc.err)] bound=[$(cat $G/UDC)]"
+LOG "role/mode nodes: $(find /sys -name role -o -name mode 2>/dev/null | grep -iE "usb|dwc3|typec" | head -n 8 | tr "\n" " ")"
+sleep 2
+ifconfig lo 127.0.0.1 up
+ifconfig usb0 10.55.0.2 netmask 255.255.255.0 up 2>/tmp/if.err
+LOG "S5 usb0 rc=$? err=[$(cat /tmp/if.err)] net=[$(ls /sys/class/net | tr "\n" " ")]"
+cat > /tmp/udhcpd.conf <<'CONF'
+start 10.55.0.10
+end 10.55.0.20
+interface usb0
+lease_file /tmp/udhcpd.leases
+option subnet 255.255.255.0
+option lease 3600
+CONF
+udhcpd -f /tmp/udhcpd.conf >/tmp/udhcpd.log 2>&1 &
+mkdir -p /www/cgi-bin
+cat > /www/cgi-bin/run <<'CGI'
+#!/bin/sh
+echo "Content-Type: text/plain"
+echo ""
+n=${CONTENT_LENGTH:-0}
+cmd=$(head -c $n)
+sh -c "$cmd" 2>&1
+CGI
+chmod 755 /www/cgi-bin/run
+httpd -p 10.55.0.2:8080 -h /www >/tmp/httpd.log 2>&1 &
+HPID=$!
+telnetd -l /bin/sh -b 10.55.0.2:23 >/tmp/telnetd.log 2>&1 &
+NPID=$!
+( while true; do [ -c /dev/ttyGS0 ] && setsid sh -c 'exec sh </dev/ttyGS0 >/dev/ttyGS0 2>&1'; sleep 1; done ) &
+SPID=$!
+sleep 1
+LOG "S6 services: telnetd=[$(pidof telnetd)] ttyGS=[$(ls /dev/ttyGS* 2>&1 | tr "\n" " ")] ptmx=[$(ls -l /dev/ptmx 2>&1)] listen=[$(netstat -ln 2>&1 | grep ":23 ")]"
+for m in $(cat /lib/modules/modules.load 2>/dev/null); do
+  ( insmod /lib/modules/$m >/dev/null 2>&1 && LOG "insmod $m ok" || LOG "insmod $m failed" ) &
+done
+
+# ---- stage 2: Debian rootfs on system_b inside super (ibiza.root=chroot|systemd) ----
+SUPER_OFF=4136632320
+IROOT=""
+for w in $(cat /proc/cmdline); do case $w in ibiza.root=*) IROOT=${w#ibiza.root=};; esac; done
+mkdevs(){
+  DD=${1:-/dev}
+  for f in /sys/class/*/*/dev /sys/block/*/dev; do
+    [ -f "$f" ] || continue
+    d=${f%/dev}; n=${d##*/}; n=$(echo "$n" | tr '!' '/')
+    mm=$(cat $f); maj=${mm%:*}; min=${mm#*:}
+    case $f in */class/block/*|/sys/block/*) t=b;; *) t=c;; esac
+    [ -e $DD/$n ] && continue
+    case $n in */*) mkdir -p $DD/${n%/*};; esac
+    mknod $DD/$n $t $maj $min 2>/dev/null
+  done
+}
+if [ -n "$IROOT" ]; then
+  LOG "S7 stage2 mode=$IROOT"
+  mkdevs
+  SUP=""
+  for u in /sys/class/block/*/uevent; do
+    if grep -q '^PARTNAME=super$' $u; then SUP=/dev/$(sed -n 's/^DEVNAME=//p' $u); fi
+  done
+  LOG "S8 super=[$SUP] $(ls -l $SUP 2>&1)"
+  mkdir -p /mnt/root
+  if [ -b "$SUP" ] && [ -b /dev/loop0 ] || mknod /dev/loop0 b 7 0 2>/dev/null; then
+    losetup -o $SUPER_OFF /dev/loop0 $SUP; LOG "S9 losetup rc=$?"
+    mount -t ext4 -o noatime /dev/loop0 /mnt/root; LOG "S10 mount rc=$? label=[$(blkid /dev/loop0 2>&1)]"
+  fi
+  if mountpoint -q /mnt/root; then
+    LOG "S11 rootfs mounted: $(cat /mnt/root/etc/os-release 2>&1 | head -n 1)"
+    if [ "$IROOT" = systemd ]; then
+      kill $TPID $HPID $NPID $SPID 2>/dev/null; killall udhcpd 2>/dev/null
+      for p in $(pidof sh); do [ "$p" != "$$" ] && kill -9 $p 2>/dev/null; done
+      mkdir -p /mnt/root/dev; mount -t tmpfs -o mode=755 tmpfs /mnt/root/dev
+      mkdevs /mnt/root/dev
+      LOG "S12a devnodes=$(ls /mnt/root/dev | wc -l) null=$(ls -l /mnt/root/dev/null 2>&1)"
+      mount --move /proc /mnt/root/proc; mount --move /sys /mnt/root/sys
+      mkdir -p /mnt/root/dev/pts /mnt/root/dev/shm
+      ln -sf /proc/self/fd /mnt/root/dev/fd; ln -sf /proc/self/fd/0 /mnt/root/dev/stdin; ln -sf /proc/self/fd/1 /mnt/root/dev/stdout; ln -sf /proc/self/fd/2 /mnt/root/dev/stderr
+      chmod 666 /mnt/root/dev/null /mnt/root/dev/zero /mnt/root/dev/full /mnt/root/dev/random /mnt/root/dev/urandom /mnt/root/dev/tty /mnt/root/dev/ptmx 2>/dev/null
+      mkdir -p /mnt/root/usr/local/sbin /mnt/root/usr/local/share/rescue/cgi-bin
+      cp /bin/busybox /mnt/root/usr/local/sbin/busybox
+      cat > /mnt/root/usr/local/share/rescue/cgi-bin/run <<'RCGI'
+#!/usr/local/sbin/busybox sh
+PATH=/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+echo "Content-Type: text/plain"
+echo ""
+n=${CONTENT_LENGTH:-0}
+cmd=$(/usr/local/sbin/busybox head -c $n)
+/usr/local/sbin/busybox sh -c "$cmd" 2>&1
+RCGI
+      chmod 755 /mnt/root/usr/local/share/rescue/cgi-bin/run
+      cat > /mnt/root/usr/local/sbin/ibiza-init <<'RINIT'
+#!/usr/local/sbin/busybox sh
+/usr/local/sbin/busybox httpd -p 8081 -h /usr/local/share/rescue >/dev/null 2>&1 &
+( /usr/local/sbin/busybox sleep 180
+  if [ ! -d /run/systemd/system ] && [ ! -e /run/rescue-stay ]; then
+    echo "linuxb: WATCHDOG systemd not up after 180s, warm reboot" > /dev/kmsg
+    /usr/local/sbin/busybox sync; echo s > /proc/sysrq-trigger; echo b > /proc/sysrq-trigger
+  fi ) &
+exec /lib/systemd/systemd
+RINIT
+      chmod 755 /mnt/root/usr/local/sbin/ibiza-init
+      LOG "S12 switch_root"
+      exec switch_root /mnt/root /usr/local/sbin/ibiza-init
+    fi
+  else
+    LOG "S11 rootfs mount FAILED, staying in stage1"
+  fi
+fi
+t=0
+while true; do
+  sleep 10; t=$((t+10))
+  LOG "up=$(cut -d" " -f1 /proc/uptime) udc=[$(ls /sys/class/udc 2>/dev/null)] state=[$(cat /sys/class/udc/*/state 2>/dev/null)] net=[$(ls /sys/class/net | tr "\n" " ")] bound=[$(cat $G/UDC 2>/dev/null)]"
+  if [ $t -eq 30 ]; then echo "" > $G/UDC; ls /sys/class/udc | head -n 1 > $G/UDC; LOG "rebind at 30s bound=[$(cat $G/UDC)]"; fi
+  if [ $t -eq 80 ]; then dmesg > /dev/pmsg0 2>/dev/null; fi
+done

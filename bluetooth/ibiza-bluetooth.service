@@ -1,0 +1,14 @@
+[Unit]
+Description=Bring up the WCN3990 Bluetooth controller (userspace firmware load + pty proxy)
+After=ibiza-wifi.service bluetooth.service
+Wants=ibiza-wifi.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=420
+ExecStart=/root/bt_boot.sh
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

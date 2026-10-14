@@ -1,0 +1,101 @@
+Slot 0:
+Metadata version: 10.2
+Metadata size: 1000 bytes
+Metadata max size: 65536 bytes
+Metadata slot count: 3
+Header flags: virtual_ab_device
+Partition table:
+------------------------
+  Name: product_a
+  Group: mot_dp_group_a
+  Attributes: none
+  Extents:
+    0 .. 3429303 linear super 2048
+------------------------
+  Name: product_b
+  Group: mot_dp_group_b
+  Attributes: none
+  Extents:
+------------------------
+  Name: system_a
+  Group: mot_dp_group_a
+  Attributes: none
+  Extents:
+    0 .. 2302047 linear super 3431424
+------------------------
+  Name: system_b
+  Group: mot_dp_group_b
+  Attributes: none
+  Extents:
+    0 .. 8388607 linear super 8079360
+------------------------
+  Name: system_ext_a
+  Group: mot_dp_group_a
+  Attributes: none
+  Extents:
+    0 .. 1163863 linear super 5734400
+------------------------
+  Name: system_ext_b
+  Group: mot_dp_group_b
+  Attributes: none
+  Extents:
+------------------------
+  Name: vendor_a
+  Group: mot_dp_group_a
+  Attributes: none
+  Extents:
+    0 .. 1180095 linear super 6898688
+------------------------
+  Name: vendor_b
+  Group: mot_dp_group_b
+  Attributes: none
+  Extents:
+------------------------
+Super partition layout:
+------------------------
+super: 2048 .. 3431352: product_a (3429304 sectors)
+super: 3431424 .. 5733472: system_a (2302048 sectors)
+super: 5734400 .. 6898264: system_ext_a (1163864 sectors)
+super: 6898688 .. 8078784: vendor_a (1180096 sectors)
+super: 8079360 .. 16467968: system_b (8388608 sectors)
+------------------------
+Block device table:
+------------------------
+  Partition name: super
+  First sector: 2048
+  Size: 9126805504 bytes
+  Flags: none
+------------------------
+Group table:
+------------------------
+  Name: default
+  Maximum size: 0 bytes
+  Flags: none
+------------------------
+  Name: mot_dp_group_a
+  Maximum size: 9122611200 bytes
+  Flags: none
+------------------------
+  Name: mot_dp_group_b
+  Maximum size: 9122611200 bytes
+  Flags: none
+------------------------
+---------------
+Snapshot state:
+---------------
+Update state: none
+Using snapuserd: 0
+Using userspace snapshots: 0
+Using io_uring: 0
+Using o_direct: 0
+Using skip_verification: 0
+Cow op merge size (0 for uncapped): 0
+Worker thread count: 0
+Num verification threads: 0
+Verify block size: 0
+Using XOR compression: 0
+Current slot: _a
+Boot indicator: booting from unknown slot
+Rollback indicator: No such file or directory
+Forward merge indicator: No such file or directory
+Source build fingerprint: 
